@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Italia · Family Trip · Aug 19 – Sep 3, 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --paper: oklch(97.2% 0.014 90);
+    --paper-deep: oklch(94.8% 0.02 88);
+    --ink: oklch(28% 0.022 65);
+    --ink-soft: oklch(46% 0.02 70);
+    --ink-faint: oklch(62% 0.016 75);
+    --rule: oklch(89% 0.018 85);
+    --napoli: #31708f;
+    --chianti: #c05a2e;
+    --emilia: #8a3341;
+    --firenze: #6c7f3f;
+    --roma: #b3862d;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Instrument Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: oklch(85% 0.08 55); }
+
+  .wrap { max-width: 1480px; margin: 0 auto; padding: 0 clamp(16px, 3vw, 44px) 56px; }
+
+  /* ---------- header ---------- */
+  header { padding: clamp(28px, 5vh, 56px) 0 26px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 10px; font-weight: 600;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(44px, 7vw, 84px);
+    font-weight: 560;
+    font-variation-settings: "opsz" 144;
+    line-height: 0.95;
+    margin: 0 0 20px;
+    letter-spacing: -0.015em;
+  }
+  h1 em { font-style: italic; font-weight: 480; color: var(--chianti); }
+  .route { display: flex; flex-wrap: wrap; gap: 6px 26px; padding: 14px 0 4px; border-top: 1px solid var(--rule); }
+  .route span { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); }
+  .route i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+  .route b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- layout ---------- */
+  main { display: grid; grid-template-columns: minmax(0, 1fr) clamp(360px, 42%, 640px); gap: clamp(20px, 3vw, 44px); align-items: start; }
+  aside { position: sticky; top: 16px; height: calc(100vh - 32px); min-height: 420px; }
+  #map { height: 100%; width: 100%; border-radius: 10px; border: 1px solid var(--rule); background: var(--paper-deep); }
+  .map-note { font-size: 12px; color: var(--ink-faint); margin-top: 8px; line-height: 1.45; }
+
+  /* ---------- table ---------- */
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600; padding: 0 10px 10px;
+    border-bottom: 1px solid var(--ink);
+  }
+  thead th:first-child { padding-left: 0; }
+
+  tr.leg td {
+    padding: 26px 0 8px;
+    border-bottom: 1px solid color-mix(in oklab, var(--c) 45%, var(--rule));
+  }
+  tr.leg .leg-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+  tr.leg .leg-name {
+    font-family: var(--serif); font-size: 23px; font-weight: 600; color: var(--c);
+    display: inline-flex; align-items: baseline; gap: 10px;
+  }
+  tr.leg .leg-dates { font-size: 13px; color: var(--ink-soft); }
+  tr.leg .leg-hotel { font-size: 13.5px; color: var(--ink-soft); margin-left: auto; }
+
+  tr.day > td { padding: 13px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tr.day > td:first-child { padding-left: 0; }
+  tr.day:hover > td { background: color-mix(in oklab, var(--c) 4.5%, transparent); }
+  tr.day.lit > td { background: color-mix(in oklab, var(--c) 9%, transparent); }
+
+  td.when { white-space: nowrap; width: 86px; cursor: default; }
+  td.when .dow { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
+  td.when .dnum { font-family: var(--serif); font-size: 19px; font-weight: 560; line-height: 1.15; }
+  tr.day:hover td.when .dnum { color: var(--c); }
+
+  .chip {
+    display: inline-block; cursor: pointer; border-radius: 5px;
+    margin: -1px -5px; padding: 1px 5px;
+    text-decoration: underline dotted color-mix(in oklab, var(--pc, var(--c)) 65%, transparent);
+    text-underline-offset: 3px;
+    transition: background 0.15s ease-out, color 0.15s ease-out;
+  }
+  .chip:hover, .chip.lit {
+    background: color-mix(in oklab, var(--pc, var(--c)) 16%, transparent);
+    color: color-mix(in oklab, var(--pc, var(--c)) 72%, var(--ink));
+    text-decoration-color: transparent;
+  }
+  .quiet { color: var(--ink-soft); }
+  .none { color: var(--ink-faint); }
+  .plus { color: var(--ink-faint); padding: 0 3px; }
+
+  .foot { font-size: 12.5px; color: var(--ink-faint); padding: 18px 0 0; line-height: 1.55; }
+
+  /* ---------- map pins ---------- */
+  .pinwrap { background: none; border: none; }
+  .pin {
+    width: 17px; height: 17px; background: var(--c);
+    border: 2px solid oklch(98% 0.01 90);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    transform-origin: 72% 72%;
+    box-shadow: 0 1px 4px oklch(30% 0.02 65 / 0.45);
+    transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.16s ease-out;
+  }
+  .pin::after {
+    content: ""; position: absolute; inset: 4.5px;
+    border-radius: 50%; background: oklch(98% 0.012 90 / 0.9);
+  }
+  .pin.hotel { border-radius: 50%; transform: none; transform-origin: 50% 50%; }
+  .pin.hotel::after { inset: 3.5px; background: none; border: 2.5px solid oklch(98% 0.012 90 / 0.95); border-radius: 50%; }
+  .pin.on {
+    transform: rotate(-45deg) scale(1.55);
+    box-shadow: 0 3px 10px oklch(30% 0.04 65 / 0.55), 0 0 0 5px color-mix(in oklab, var(--c) 28%, transparent);
+  }
+  .pin.hotel.on { transform: scale(1.55); }
+  .lf-on { z-index: 1000 !important; }
+
+  /* ---------- route line + time labels ---------- */
+  .leaflet-tooltip.timelabel {
+    background: oklch(98% 0.012 90 / 0.94); color: var(--tc, var(--ink));
+    border: 1px solid color-mix(in oklab, var(--tc, var(--ink)) 45%, transparent);
+    border-radius: 999px; font-family: var(--sans); font-size: 11px; font-weight: 600;
+    padding: 1px 7px; box-shadow: 0 1px 3px oklch(30% 0.02 65 / 0.25);
+    white-space: nowrap;
+  }
+  .leaflet-tooltip.timelabel::before { display: none; }
+  .leaflet-container[data-z="lo"] .timelabel.t-mid,
+  .leaflet-container[data-z="lo"] .timelabel.t-short,
+  .leaflet-container[data-z="mid"] .timelabel.t-short { display: none; }
+
+  /* ---------- leaflet skin ---------- */
+  .leaflet-tooltip {
+    background: oklch(24% 0.02 65 / 0.92); color: oklch(96% 0.012 90);
+    border: none; border-radius: 6px; font-family: var(--sans); font-size: 12.5px;
+    padding: 4px 9px; box-shadow: 0 2px 8px oklch(20% 0.02 65 / 0.3);
+  }
+  .leaflet-tooltip-top:before { border-top-color: oklch(24% 0.02 65 / 0.92); }
+  .leaflet-popup-content-wrapper { background: var(--paper); color: var(--ink); border-radius: 8px; font-family: var(--sans); }
+  .leaflet-popup-content { margin: 12px 16px; font-size: 13.5px; line-height: 1.45; }
+  .leaflet-popup-content b { font-family: var(--serif); font-size: 15px; }
+  .leaflet-popup-content a { color: var(--napoli); font-weight: 600; }
+  .leaflet-popup-tip { background: var(--paper); }
+  .leaflet-container { font-family: var(--sans); }
+  .fitbtn {
+    background: var(--paper); border: none; width: auto !important; padding: 0 10px;
+    font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--ink);
+    cursor: pointer; line-height: 30px; height: 30px;
+  }
+  .fitbtn:hover { background: var(--paper-deep); }
+
+  /* ---------- mobile ---------- */
+  @media (max-width: 940px) {
+    main { grid-template-columns: 1fr; }
+    aside { order: -1; position: sticky; top: 0; z-index: 500; height: 44vh; min-height: 300px; padding: 8px 0; background: var(--paper); }
+    #map { border-radius: 8px; }
+    .map-note { display: none; }
+    tr.leg .leg-hotel { margin-left: 0; width: 100%; }
+    thead { display: none; }
+    tr.day { display: grid; grid-template-columns: 78px 1fr; border-bottom: 1px solid var(--rule); padding: 9px 0; }
+    tr.day > td { border-bottom: none; padding: 3px 0 3px 10px; }
+    tr.day > td.when { grid-row: 1 / span 3; padding-left: 0; }
+    tr.day > td[data-slot]::before {
+      content: attr(data-slot); display: block; font-size: 10px; letter-spacing: 0.13em;
+      text-transform: uppercase; color: var(--ink-faint); font-weight: 600;
+    }
+    tr.leg td { display: block; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Family trip · 19 August – 3 September 2026 · 16 days</p>
+    <h1>Andiamo, <em>Italia</em></h1>
+    <div class="route" id="route"></div>
+  </header>
+
+  <main>
+    <section>
+      <table id="sched">
+        <thead>
+          <tr><th>Date</th><th>Morning</th><th>Afternoon</th><th>Evening</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="foot">
+        Hover any place or date to spot it on the map · click a place to open it in Google Maps.
+        The line follows the actual driving route in trip order; times are by car without traffic (zoom in for the shorter hops).
+        Pins marked "approx." (apartments, Napolart, Acetaia Boni, Arrogant Pub, Cantina Errante) are placed near their neighborhood, not the exact door.
+      </p>
+    </section>
+
+    <aside>
+      <div id="map"></div>
+      <p class="map-note">Hovering a date highlights everything planned that day; hovering a pin highlights it back in the schedule.</p>
+    </aside>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const LEG_COLORS = {
+  napoli: "#31708f", chianti: "#c05a2e", emilia: "#8a3341",
+  firenze: "#6c7f3f", roma: "#b3862d",
+};
+
+/* region = which color the pin gets (geography); may differ from the leg a day belongs to */
+const PLACES = {
+  airport:    { n: "Naples Airport (Capodichino)",            lat: 40.8830, lng: 14.2866, r: "napoli",  q: "Naples International Airport Capodichino" },
+  napolart:   { n: "Napolart",                                 lat: 40.8418, lng: 14.2489, r: "napoli",  q: "Napolart Naples", hotel: true, approx: true },
+  naples:     { n: "Napoli, centro storico",                   lat: 40.8476, lng: 14.2536, r: "napoli",  q: "Naples historic centre Italy" },
+  bosco:      { n: "Bosco Della Spina, Murlo",                 lat: 43.1751, lng: 11.3860, r: "chianti", q: "Bosco della Spina Murlo", hotel: true },
+  leripi:     { n: "Podere Le Ripi, Montalcino",               lat: 42.9991, lng: 11.5445, r: "chianti", q: "Podere Le Ripi Montalcino" },
+  brasseria:  { n: "Brasseria della Fonte, Pienza",            lat: 43.0938, lng: 11.6510, r: "chianti", q: "Brasseria della Fonte Pienza" },
+  sculture:   { n: "Parco Sculture del Chianti",               lat: 43.3927, lng: 11.3796, r: "chianti", q: "Parco Sculture del Chianti Pievasciata" },
+  brolio:     { n: "Brolio Castle, Gaiole in Chianti",         lat: 43.4135, lng: 11.4639, r: "chianti", q: "Castello di Brolio" },
+  antinori:   { n: "Antinori nel Chianti Classico",            lat: 43.6128, lng: 11.1938, r: "chianti", q: "Antinori nel Chianti Classico Bargino" },
+  galileo:    { n: "Museo Galileo, Firenze",                   lat: 43.7677, lng: 11.2559, r: "firenze", q: "Museo Galileo Florence" },
+  cadelbrado: { n: "Birrificio Ca' del Brado",                 lat: 44.4334, lng: 11.3539, r: "emilia",  q: "Ca' del Brado Rastignano" },
+  arrogant:   { n: "Arrogant Pub, Bologna",                    lat: 44.5009, lng: 11.3514, r: "emilia",  q: "Arrogant Pub Bologna", approx: true },
+  balsamico:  { n: "Balsamic Vinegar Museum, Spilamberto",     lat: 44.5334, lng: 11.0225, r: "emilia",  q: "Museo dell'Aceto Balsamico Tradizionale Spilamberto" },
+  boni:       { n: "Acetaia Museo Boni",                       lat: 44.6458, lng: 10.9257, r: "emilia",  q: "Acetaia Boni Modena", approx: true },
+  castello:   { n: "Hotel Castello, Modena",                   lat: 44.6222, lng: 10.9574, r: "emilia",  q: "Hotel Castello Modena", hotel: true },
+  bologna:    { n: "Bologna, centro",                          lat: 44.4938, lng: 11.3426, r: "emilia",  q: "Bologna Italy" },
+  ferrari:    { n: "Museo Ferrari, Maranello",                 lat: 44.5301, lng: 10.8611, r: "emilia",  q: "Museo Ferrari Maranello" },
+  vacche:     { n: "Red Cows Consortium (Vacche Rosse)",       lat: 44.6891, lng: 10.6041, r: "emilia",  q: "Consorzio Vacche Rosse Reggio Emilia" },
+  reggio:     { n: "Reggio Emilia, centro",                    lat: 44.6983, lng: 10.6312, r: "emilia",  q: "Reggio Emilia Italy" },
+  pinocchio:  { n: "Parco di Pinocchio, Collodi",              lat: 43.8992, lng: 10.6526, r: "firenze", q: "Parco di Pinocchio Collodi" },
+  zoo:        { n: "Zoo of Pistoia",                           lat: 43.9300, lng: 10.8653, r: "firenze", q: "Giardino Zoologico di Pistoia" },
+  peccioli:   { n: "Parco Preistorico, Peccioli",              lat: 43.5561, lng: 10.7176, r: "firenze", q: "Parco Preistorico Peccioli" },
+  pisa:       { n: "Leaning Tower of Pisa",                    lat: 43.7230, lng: 10.3966, r: "firenze", q: "Leaning Tower of Pisa" },
+  vallombrosa:{ n: "Vallombrosa Nature Reserve",               lat: 43.7327, lng: 11.5551, r: "firenze", q: "Riserva Naturale Vallombrosa" },
+  mall:       { n: "The Mall Firenze, Leccio",                 lat: 43.7030, lng: 11.4632, r: "firenze", q: "The Mall Firenze Leccio" },
+  errante:    { n: "Cantina Errante, Firenze",                 lat: 43.7708, lng: 11.2386, r: "firenze", q: "Cantina Errante Firenze", approx: true },
+  archea:     { n: "Archea Brewery, Firenze",                  lat: 43.7674, lng: 11.2455, r: "firenze", q: "Archea Brewery Florence" },
+  florence:   { n: "Firenze, centro",                          lat: 43.7698, lng: 11.2556, r: "firenze", q: "Florence Italy" },
+  ciri:       { n: "Casa Della Ciri (Airbnb)",                 lat: 43.7729, lng: 11.2495, r: "firenze", q: "Florence Italy", hotel: true, approx: true },
+  mercato:    { n: "Campagna Amica Market, Circo Massimo",     lat: 41.8888, lng: 12.4832, r: "roma",    q: "Mercato Campagna Amica Circo Massimo Roma" },
+  borghese:   { n: "Villa Borghese",                           lat: 41.9144, lng: 12.4848, r: "roma",    q: "Villa Borghese Rome" },
+  colosseum:  { n: "Colosseum",                                lat: 41.8909, lng: 12.4919, r: "roma",    q: "Colosseum Rome" },
+  explora:    { n: "Explora, il Museo dei Bambini",            lat: 41.9106, lng: 12.4754, r: "roma",    q: "Explora Museo dei Bambini di Roma" },
+  trevi:      { n: "Trevi Fountain",                           lat: 41.9010, lng: 12.4833, r: "roma",    q: "Trevi Fountain Rome" },
+  numa:       { n: "Numa Verso",                               lat: 41.8721, lng: 12.4804, r: "roma",    q: "Numa Rome Verso Via Ostiense", hotel: true },
+  pompeii:    { n: "Pompeii Archaeological Park",              lat: 40.7489, lng: 14.4849, r: "napoli",  q: "Pompeii Archaeological Park" },
+  sorrento:   { n: "Sorrento",                                 lat: 40.6249, lng: 14.3748, r: "napoli",  q: "Sorrento Italy" },
+  edenlandia: { n: "Edenlandia",                               lat: 40.8216, lng: 14.1825, r: "napoli",  q: "Edenlandia Naples" },
+  mancini:    { n: "Casa Mancini by DomusExtra",               lat: 40.8437, lng: 14.2570, r: "napoli",  q: "Casa Mancini DomusExtra Naples", hotel: true, approx: true },
+};
+
+const LEGS = [
+  { name: "Napoli", c: "napoli", dates: "Wed Aug 19", hotel: "napolart", hotelLabel: "Napolart" },
+  { name: "Chianti & Val d’Orcia", c: "chianti", dates: "Aug 20 – 22", hotel: "bosco", hotelLabel: "Bosco Della Spina, Murlo" },
+  { name: "Modena & Bologna", c: "emilia", dates: "Aug 23 – 25", hotel: "castello", hotelLabel: "Hotel Castello, Modena" },
+  { name: "Firenze", c: "firenze", dates: "Aug 26 – 28", hotel: "ciri", hotelLabel: "Casa Della Ciri (Airbnb)" },
+  { name: "Roma", c: "roma", dates: "Aug 29 – 30", hotel: "numa", hotelLabel: "Numa Verso" },
+  { name: "Napoli, again", c: "napoli", dates: "Aug 31 – Sep 3", hotel: "mancini", hotelLabel: "Casa Mancini by DomusExtra" },
+];
+
+/* slot items: {p, t} = place chip · {t} = plain text · {t, q: true} = quiet text */
+const DAYS = [
+  { leg: 0, dow: "Wed", d: "Aug 19",
+    m: [], a: [], e: [{ p: "airport", t: "Landing at 23:00" }] },
+  { leg: 1, dow: "Thu", d: "Aug 20",
+    m: [{ p: "naples", t: "Breakfast in Naples" }],
+    a: [{ t: "Drive to " }, { p: "bosco", t: "Bosco Della Spina" }],
+    e: [{ t: "Pool", q: true }] },
+  { leg: 1, dow: "Fri", d: "Aug 21",
+    m: [{ t: "Pool", q: true }],
+    a: [{ p: "leripi", t: "Podere Le Ripi" }],
+    e: [{ p: "brasseria", t: "Brasseria della Fonte" }] },
+  { leg: 1, dow: "Sat", d: "Aug 22",
+    m: [{ p: "sculture", t: "Parco Sculture del Chianti" }],
+    a: [{ p: "brolio", t: "Brolio Castle" }],
+    e: [{ t: "Pool", q: true }] },
+  { leg: 2, dow: "Sun", d: "Aug 23",
+    m: [{ p: "antinori", t: "Antinori nel Chianti Classico" }],
+    a: [{ p: "galileo", t: "Museo Galileo" }],
+    e: [{ p: "cadelbrado", t: "Ca' del Brado" }, { t: " + ", plus: true }, { p: "arrogant", t: "Arrogant Pub" }] },
+  { leg: 2, dow: "Mon", d: "Aug 24",
+    m: [{ p: "balsamico", t: "Balsamic Vinegar Museum" }],
+    a: [{ p: "boni", t: "Acetaia Museo Boni" }],
+    e: [{ p: "bologna", t: "Bologna city tour" }] },
+  { leg: 2, dow: "Tue", d: "Aug 25",
+    m: [{ p: "ferrari", t: "Museo Ferrari, Maranello" }],
+    a: [{ p: "vacche", t: "Red Cows Consortium" }],
+    e: [{ p: "reggio", t: "Reggio Emilia city tour" }] },
+  { leg: 3, dow: "Wed", d: "Aug 26",
+    m: [{ p: "pinocchio", t: "Parco di Pinocchio" }],
+    a: [{ p: "zoo", t: "Zoo of Pistoia" }],
+    e: [{ p: "florence", t: "Florence city tour" }] },
+  { leg: 3, dow: "Thu", d: "Aug 27",
+    m: [{ p: "peccioli", t: "Parco Preistorico di Peccioli?" }],
+    a: [{ p: "pisa", t: "Tower of Pisa" }],
+    e: [{ p: "errante", t: "Cantina Errante" }] },
+  { leg: 3, dow: "Fri", d: "Aug 28",
+    m: [{ p: "vallombrosa", t: "Vallombrosa reserve" }],
+    a: [{ p: "mall", t: "The Mall Firenze" }],
+    e: [{ p: "archea", t: "Archea Brewery" }] },
+  { leg: 4, dow: "Sat", d: "Aug 29",
+    m: [{ p: "mercato", t: "Campagna Amica Market" }],
+    a: [{ p: "borghese", t: "Villa Borghese" }],
+    e: [{ p: "colosseum", t: "Colosseum" }] },
+  { leg: 4, dow: "Sun", d: "Aug 30",
+    m: [{ p: "explora", t: "Explora, children’s museum" }],
+    a: [{ p: "trevi", t: "Trevi Fountain" }],
+    e: [] },
+  { leg: 5, dow: "Mon", d: "Aug 31",
+    m: [{ p: "pompeii", t: "Pompeii" }],
+    a: [{ p: "sorrento", t: "Sorrento" }],
+    e: [] },
+  { leg: 5, dow: "Tue", d: "Sep 1",
+    m: [{ t: "Private tour", q: true }], a: [{ t: "Private tour", q: true }], e: [{ t: "Private tour", q: true }] },
+  { leg: 5, dow: "Wed", d: "Sep 2",
+    m: [{ p: "naples", t: "Culinary tour" }],
+    a: [{ p: "edenlandia", t: "Edenlandia" }],
+    e: [] },
+  { leg: 5, dow: "Thu", d: "Sep 3",
+    m: [{ p: "airport", t: "Early flight home" }], a: [], e: [] },
+];
+
+/* ---------- map ---------- */
+const map = L.map("map", { zoomSnap: 0.25, scrollWheelZoom: true });
+L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  maxZoom: 19,
+}).addTo(map);
+
+const markers = {};
+for (const [id, p] of Object.entries(PLACES)) {
+  const color = LEG_COLORS[p.r];
+  const icon = L.divIcon({
+    className: "pinwrap",
+    html: `<div class="pin${p.hotel ? " hotel" : ""}" style="--c:${color}"></div>`,
+    iconSize: [17, 17],
+    iconAnchor: p.hotel ? [8.5, 8.5] : [12.2, 12.2],
+  });
+  const mk = L.marker([p.lat, p.lng], { icon, riseOnHover: true }).addTo(map);
+  const suffix = p.approx ? " · approx." : "";
+  mk.bindTooltip(p.n + suffix, { direction: "top", offset: [0, -12] });
+  mk.bindPopup(
+    `<b>${p.n}</b>${p.approx ? ' <span style="opacity:.6">(approx. location)</span>' : ""}<br>` +
+    `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.q)}" target="_blank" rel="noopener">Open in Google Maps ↗</a>`,
+    { offset: [0, -8] }
+  );
+  mk.on("mouseover", () => litChips(id, true));
+  mk.on("mouseout", () => litChips(id, false));
+  markers[id] = mk;
+}
+
+const allBounds = L.latLngBounds(Object.values(PLACES).map(p => [p.lat, p.lng]));
+map.fitBounds(allBounds, { padding: [36, 36] });
+window.addEventListener("load", () => { map.invalidateSize(); map.fitBounds(allBounds, { padding: [36, 36] }); });
+window.addEventListener("resize", () => map.invalidateSize());
+
+/* ---------- driving route, chronological ----------
+   Segments precomputed with OSRM (car profile, no traffic); poly = encoded polyline. */
+const ROUTE = [{"a":"airport","b":"napolart","min":18,"poly":"cyoxFanevAoAoD|@}@hH~M~BgBw[_q@~HiHfCdE`CeD_DcExNqQbWaMbLmKfb@ho@vGnXlSqNdKzTdHi@^vE|HQ|@dO~s@yGtg@xW_T`n@G`KdEtoApEpQvLbRyFtGrC~Y~@|BtDc@[`I"},{"a":"napolart","b":"naples","min":6,"poly":"o}gxF_`~uAFy@hB]pBwOzE|@fEfB^O@g@}BaA_BB_Dw@_N_Am@LkAsKCeEaA}@uDwGcFfCeChBf@t@r@^bAbCh@r@o@pAgFrDiAiB"},{"a":"naples","b":"bosco","min":295,"poly":"{~hxF}}~uAwtGqtKw}]iSiw_@`kj@o~RvcB{}NvdTwhLlvk@o{Lhw_@klBdw_@mzc@|zbAocEvke@cvD`zI_~VncMiwJj~KkzEse@qhMv_JwvIoM{zNxoEmzIb|PepG|jEehIsSksJxpI{iNdx\\yy_@rcJwhNjp]idPdjAaoI|cLgcMdmHqoVfzFkbUd|Lyh@jcMaxDvuFzh@pnIxtBxnAwq@nzYh}A`hDo]|tGtrCueAtyD~pH"},{"a":"bosco","b":"leripi","min":89,"poly":"qsofGwxndAmB}KtPmPzc@lDxn@uYhRw_Abp@iOlRgk@`Ayl@da@dCf}@op@}BepAd`@sj@_r@a~AgVioBhkB}HfYzQvaA~Ej_Ash@pnA`JpUms@noAkw@pj@wAfWat@vMnn@kVddAbHvOrAyOfM\\zCo_@zMpT`d@eU~Rs`@dcBofAhw@snArjAzIbk@v^yLwi@}v@giAxFiOlZm@xFmR"},{"a":"leripi","b":"brasseria","min":77,"poly":"kgmeGcxmeAyFlRmZl@yFhO|v@fiAxLvi@ck@w^sjA{Icf@`g@mPxf@{m@`f@mLHuQtV}SdGmTra@uZvD}FlNkCkNcIoEmD``@{Lk@u@zNqFhAvDiCmGsLvE~CfNc{@Zyk@`O_T`BkUkNq]s_@wCcFgPcIlKsIkGmY}v@{Ieq@`EsYcAeUiNrC~MiOhJs`@bCov@ag@arAzEyZrc@m\\~Qch@fAm^_Iea@nBjD^{Vqa@uq@cQeGsVkZi@qZ_H_Pqw@{Pz@mp@zI}j@_P_`@yNaMoI^aCcJmZ`Q"},{"a":"brasseria","b":"sculture","min":84,"poly":"}u_fG{qbfAzs@_sAc[bT}_DxFgyApi@}GiPwg@jDwD_w@u_@u[rSuh@xFo{@iNJw@_Yk^kt@_L{HgWnOa@mQgb@uCskAg}@aKq[w^qH_Yqi@oPiyA_w@qaAeOxWyjB`B_j@idA}OWn@fb@{f@dhBeaC`dBs_@|rAk@pkAxw@ngF{Eln@{_A|rAmk@`RwvAZmq@za@sSzdAi{DniG}c@b}Arf@htCsEzdAbRjcCaGngBz}@npAtX|_G}Y~[y]a`@ux@sRiy@cK_]lJekA_u@qn@`JwE`v@dYta@oKrk@nl@`OfIfh@wLlf@lPzIiw@rf@yg@fu@i}@bDy`@sc@ql@fe@iYmMuSz["},{"a":"sculture","b":"brolio","min":35,"poly":"gfzgGg{mdA{Bg@pWsZhYlMdJ_L~PeHjOaOda@vc@jF}CnE~BdVwIjK|DlOo@pYs\\hIsUdMcKnVyGj@qIfPcGaF_H_FfAkBcCvD{AtF{]iB{_@uIsRyTaEcO`@aPeXoSpIyIu@qHaFi`@rOoTfTeV|@wK{DsGtFiLeDsKtCgD}CcI`A{XaGuO}VeJmGqFQqNe[}FeCyHQqUjH_DjI}BoJkLiGu@sEsGcGkLuf@wEwDeCaKFsThFeRrBwXuE{JuAgMfDwQiHeJdBaNw@{LnAo@dBhD[yE`A~@~@{Cl@yJxHkAsBT"},{"a":"brolio","b":"antinori","min":66,"poly":"me~gGwb~dAk`Ab{AuLrs@`J`k@kW`{A}QjI}KaS}LbJkk@kNoTxXw~@mKoaBbcCcZhZsMsFrDhPcaAsj@sPtcB|DfgAmHxJtG|KmUhLR~c@zUpq@}bAdsBmmAfoAiQnn@wTxDsElg@o[mDvHld@f[h[sJbDfHzPoi@rKwAhc@qMaGrB|VkRrCqPxa@YnSpV~FbJpWeOzg@tJ|zAca@r_@}Qhs@ktAj~@}t@}OaWhm@ogAfLaqAbm@ytA|iAiw@lXsA_M"},{"a":"antinori","b":"galileo","min":31,"poly":"ybeiGigicAeCrGxKkA_EvF{}@l\\}V~Ska@`AmhAp\\k[mZceAu`C_h@wb@cbAwEmXgK{h@vEo[kKs_@hHy\\sNml@pDeUwKoSi\\wUkCiAaQ{OnFvQi}AeFwl@sl@iv@wbAsqBkDoj@{d@w^cMmb@mB_h@io@yi@iBtXoa@yA}HnmBfBxz@cKxtAsG_C_DdQ"},{"a":"galileo","b":"cadelbrado","min":86,"poly":"}jcjGymucA~Gm}AqnBfs@~HhzB_uA~kA}\\byDwjD|cGeaOa_F}zCafDgeCbpAurDiNiq@o{@wiGuc@koCupBilMvdIehLwp@igD~gBc`C}}@kjB~h@}_DsxCqv@gyDatFuaDqmHt~B}j@ceFpn@okGgzGeeD"},{"a":"cadelbrado","b":"arrogant","min":18,"poly":"wkenGmphdAnBu@gEwCsWsBoGbF_EKJzK}O|@qLiScQqn@uPmPoL{Z{IkKiZyJsCcHgGlCisAwRyDqCwFjSBjRoGzUiT_LgRvq@yEpEq@xC`BlAqDfM}zApIwGlU~GjG"},{"a":"arrogant","b":"castello","min":41,"poly":"oqrnGoahdAfD`NuQgIxBuLccBis@x\\_j@qb@}c@_aAdqDaNtqBjl@f{BxFdvCeb@~oCpl@hiCja@`gGpV~u@g_CfyJieEpfOqy@byGia@j_Btb@}BcmAxoAsqBlAue@||@{iAdm@tGg\\"},{"a":"castello","b":"balsamico","min":18,"poly":"}ejoGma{aAuGf\\ziAem@~W}XtL_c@r`B|@~VmEbSiPfKoXvaGmhFta@ie@LkI"},{"a":"balsamico","b":"boni","min":26,"poly":"e}xnGwygbA}H}JsDpd@gmFdwEci@ri@}Mv[md@`QqbBy@uL~b@_X|XmwApv@{Ynt@sX`a@}NwNyH~MbQrd@eQlFcS|~@o\\aa@"},{"a":"boni","b":"bologna","min":45,"poly":"c|noGaytaAtSe~@bXfTnRoPlaAagBrsAyt@ne@y|@xxBsCpjAymAeVTo@cPpmAqfJneEmfObrG}iWjPc`@lQwEac@uiA|Di~@afAc}CrO{lC|LkCtHwn@}A}c@"},{"a":"bologna","b":"ferrari","min":53,"poly":"mdqnG}dfdAoLn\\e\\rOrE|m@{e@vlB|mAveBp^j_BcVpu@nSrFtT~q@agGziUkZgFhfA|f@sKzsAt`Ad~CoOtwCr{@juC_U~qGir@``BqlBbyCuNbuEhPhzClYh{@o^brCyNrNl{@xMfE|UwUlKg@~X"},{"a":"ferrari","b":"vacche","min":44,"poly":"ehxnGghhaA_sAhvHe_A`B}`@hiDyKnnCy{B|{BaMh_A{z@rbCz@p^q_@dHmFhh@qv@rvBm{@bRgcCbnBeaCbg@gFt\\o[dBua@|_BmUbE_o@zeA_TMkQnZ|K|t@kOu@"},{"a":"vacche","b":"reggio","min":9,"poly":"cjwoG_av_A|MnCl@yAmUc~AFo@d@OaCyAOaANyAnA_FxDKzSqEjBiAvBiEcU_WeQyJ_AO_HzAyGsCoBFsC|AuB`I}MuHf@gBOy@Py@"},{"a":"reggio","b":"pinocchio","min":133,"poly":"adyoGah{_Ae[fkAq|CkwApuBc|PtqGcxWlmH{gFv{EkeOjfB}`MlzM{ug@hzEgvDtbKziCv_@p_Ap_HavB`tFx`Dnw@xaEf`DvpC|iBsd@v`Cly@|fDcgBpnLlr@ncMygI|wDluCvrFv{@r{EhQfbDk|A~rFviFltBthAdaBcRnsC`}Bs{BlaFgYf{Gm~D~dIiqCzyNwWrtEdr@vbL|yDbcE`j@~`H~pDt}GmaGjtDqdB||E"},{"a":"pinocchio","b":"zoo","min":34,"poly":"g`}jGco_`AhS}Rm@sH|MqO`RwFeGsVlWcd@fRisAthAoq@fZmf@vS{FdZ}\\bc@zArUc\\rb@qP~Bcb@yEa]hX~JlJvMiEc@_pDcxG_j@yjCjCybCgCsP{}AohBey@qP}_@weAwBylAmXm`AwUevGpDeZq@|Dkl@yD|Dfq@kFzW}g@|e@wN`AuGsJ|K|lBhHl^f@h]sGzF"},{"a":"zoo","b":"florence","min":40,"poly":"c`ckGyjiaAjFee@mSkqBl`Aqy@~D_fA|g@dAvS}gE`mCyhN`_BskBr`B}}EzJueFdMqt@xaIavN~OccAbZbGrVulA~iAehBuRwsAhRH~^qeAnOjHYh_@"},{"a":"florence","b":"ciri","min":10,"poly":"k}cjGqxucAh@eP`@}DcDoCgGaDxC{RsIoHiHtReJ`UmApByBhGSPg@[aAxCf@\\uFzPzGdF~BvEgAbCxFxJ`B`ErA\\TZO`N^dB^h@dJwNnA}BGK"},{"a":"ciri","b":"peccioli","min":67,"poly":"qkdjGmdtcAfSnOke@poBpa@hjHoWfbDfGnyCxd@pZle@wK|i@~Ht|@jk@vyA|cChx@f}Bvr@~|@e@`_C{pAvyD~Qtt@v[zbEjt@vzAzDjpGaNlz@nj@fpFuC~|@bLrfB|`@lrA{KtdB~KvsB|}@r{BvYtvBhcAjlBeAryArL`z@xc@~q@t{@`nDaGbqA`Npp@aKlPpk@_@jVtc@l[mEhwB_bB|Jis@dt@{{AxnIkbD"},{"a":"peccioli","b":"pisa","min":42,"poly":"i`zhG_~k`AimIb`Dyy@|~AyFnr@}yBjbBiYzD_Uac@qf@qC`LoBf\\hw@hDruC~pAf}BcGbeFytAlyAy^ziAktAncAa\\rbFa@`xBauBtcGoSllBo`@`|@oBl|AuiAx_@aIc[{fA{NbKgh@"},{"a":"pisa","b":"errante","min":74,"poly":"wsziGizm~@`DiVsPl`A{yAf`AanAhpCmvCr|C_{D{}F{GisDqtBwoAs}@mwE`q@{iIjG}aIzmAmlUme@weBkpHaaNwj@ulCBmtC{}AohBey@qPc_@wcAws@mgLvY{~E`mCyhN`_BskBr`B}}EbZy}Gv`IosN`PgcA`ZfG`kAu}CtV{VrXrd@jR_^"},{"a":"errante","b":"vallombrosa","min":51,"poly":"q~cjGi`rcArAoGzMpE~HcJbf@mD~m@fP~}@`rAQ|v@tIlLdo@jEji@c`@~q@aG}GeFu@{M}QnBxSiyAeFwl@yp@{|@w_AimB}DyWSqv@li@_eBtAyf@bTw_BZ_kAbKobAqHul@aDuiBjHuOt`@oQvr@c{Azg@eOpyAk`B~CaSmGggAxSs{A~IsV~cAyz@|tAwk@hAjNkBxDyCg\\mNuJea@vCd@jWcJyNwL^oCwTiFvFkHcM_[jEcX`Wmb@_VgUgBvFm{AhXup@rSwUqCqFtDwBkB_MbN{O_OhA~JqWqK}t@nFuVyS_XgLoGcG~BeOus@TeSzGjCgPyt@cB|PoDiJ{FdQkTrE_Ysg@pWhIqa@e[uVqh@fBlSsHtCTla@wQ}QuTuAqC_IiPfGwBb[oShDsOiq@p@o|@"},{"a":"vallombrosa","b":"mall","min":21,"poly":"wm|iGozoeAuAcJwMrUpBzAZjGcCpGFxGcHiI?sDcCkAcCwJsF`@z@}F}I`F~ClGiEnFh@nJgG~AaD_DrCyDqG`ArAvYaB~PoKpEkFrL}@nKuCXaEx`@yCtBuBgBs@aF|BaHqDdEeApN`CzGvHmA|AvFfFfBvAhEbHGZtQpFXdD`UtEnGjEwBvDrIfViDp@pHpG|BKnI`DtJkEnTvFnWLtUpGdHIte@vCva@eBbOeGvFJvT}Ax@mBsEmCNhC~DmBvLgS~IpAvHpCaD`ArA{EpWcEjCKfEgCWfCvBj@zGnFpBnEhH`OxFx_@kO~MjCzFzH]dK|BxM|RnEzHxYxVyWrJ}Dzk@mFnX}RrBrDmAlRoG_@TcEvAT"},{"a":"mall","b":"archea","min":35,"poly":"ewviGox}dAmBlDnG^lBaRzd@tCpc@|UvBzEcH`h@~M|Ht}@uGm_A~v@}KlTmVtfBrGv`A_D|UyvAb}Aql@fRis@v|A{]jO_IhRpDbhBbHjl@{JvbAa@njAcT``BgA~d@_h@~~AgBbc@fGvs@hnBr|DQ~m@kJlbA_EbErXgA\\|KiLjLu_@tAgc@h]mr@sFuFgMzBcr@}]e_@gScd@oAc\\{Me]{p@rYmb@zC_SgO`DySpI`E"},{"a":"archea","b":"mercato","min":188,"poly":"cicjG{kscA`aDn`ExoCq`@siCy{JhdAmxPb~EggF|a@uvEb`IooCvnNc~MdaGkkLdmFiaW|cFsnFj_IxiBdiZq|AhwV}iRhre@cbPtxL_rNjdPgjA`iNop]fz_@scJdjNox\\drJ_pIxiI`SrqG}lExyIyzPf~MmyCziJfrEb`Ev|GpiOt`AkBtsElsFvhCnnJuuA"},{"a":"mercato","b":"borghese","min":10,"poly":"wkt~FmeekAxHjGcHdJoJnDgE`GmAlHZ|SsAbGg\\zd@eQjJmC{@yB}DgB}X{D_RuD}G_H}D_GWoJpAeMrHmZvHaJXiMmBeAyQtAuKQkEpByFfCm@nKuZ"},{"a":"borghese","b":"colosseum","min":9,"poly":"wry~FmhekAuC~DwIiFmBgB{FgOdDmQ~I_RvBsBzE_@~JnC`A}B|AhAhHU~NwC|L}OtKvQ~G_IpCl@bYzf@hAkAjf@mM"},{"a":"colosseum","b":"numa","min":6,"poly":"k|t~FqyfkALgEtBmGzEjBhAzBPjJrBbEfXzFvZ|a@xOrJhBrC~AeAjCxB|SjBpA}LzCXI`C~CVUtGuHo@"},{"a":"numa","b":"explora","min":12,"poly":"ucq~FqpdkAyTwBeEoEsBDo@z@h@lCqDpFm]nSqAKkLgOwGwEuHiAuHjBoE|DcCxFa@vF\\tQuApGg\\zd@{OfJ_Da@iCyDaEad@_HsPgH_E_IMwEjAkMvIcB}Mp@_D~DTNsDq@mDwDfEuAoAwAj@ZnGpAbA"},{"a":"explora","b":"trevi","min":4,"poly":"gtx~FcrckA`@GZ]Ry@@aARMdb@nDHi@z@qAr@Uh@aAGgCbCMFcB`BSVmHW_BpDoATq@e@{C[k@o@qEpEyA"},{"a":"trevi","b":"pompeii","min":161,"poly":"gxv~FiaekAr|E{yUxkAzRlhDevMuCwnKnx@arIvoFgtMzyDoxWpHkuLvpJivV~vIslPbvBoiIdmCqxAllEktLjcBghP~IitNn{L}v_@jsDidXfqFqjRt_OogTx}RscBl|CcbI`nImvHt`IkpOzeFs}EhhQge@xiTncAzvAq{ChpI{yHhjEo`Q"},{"a":"pompeii","b":"sorrento","min":38,"poly":"enuwFq_lwAkGdr@bT}HnMdDzLi`@zR}NzeBgf@tQqPr_Ao\\lPe[rOsHt[hM~FtX`MtNpk@l@rHpPnFxf@cT|l@{E`k@Znj@rMl`@tAjs@fh@ndAhaAph@jeA~WtHlKaJ`UhLxTeJpZ`@hv@vDdFdLk@ptAwlAzTeCpG`HlZbx@rJnuB~[xgAFhHiIhE`B~H"},{"a":"sorrento","b":"mancini","min":57,"poly":"qv}vFmnvvAaU{aB{C{tCgSoWgj@cEybBpnAyEo}@dJqZiLyT`JaUkqC_nAgh@odAeQi`C~Z_yAcPkx@qk@m@aUkh@c^yLs^hd@irA`n@wsChw@mWtUklA|aDaFf}@gmBbzHaeAlyA_jGz~EuvAx}C`IxvAl\\jiAa_@joA`Rz_C"},{"a":"mancini","b":"naples","min":2,"poly":"mhhxFwq_vA^c@cAeBsGpDwB|@eChBP\\TVr@^bAbCh@r@o@pAiCpB}A`AiAiB"},{"a":"naples","b":"edenlandia","min":13,"poly":"{~hxF}}~uAa@s@vH_FzDvEjDbNjEsC}@yPvUnJlAcH`MrGd^j{@_DfFeCpy@RlQh`@|cCrFbUUjE`AxBnC~e@zDd]tAhBlDUvQrt@sLlEfAjG~DA"},{"a":"edenlandia","b":"airport","min":25,"poly":"m~cxFazpuAnGuD{Tu}@pDsDcHc[_IlBdBlRoTcJeIz[gZHkCwG`DyFqN{m@^ak@wKi[}d@yRab@rG{f@om@_o@wvByQw^qIu_@fBi[aAkSvCcc@gDmj@{Oud@fAc`@mXg]qFvDee@qs@_IhHv[~p@_CfBCpHsGcP"}];
+
+function decodePoly(str) {
+  let i = 0, lat = 0, lng = 0; const pts = [];
+  while (i < str.length) {
+    for (const which of [0, 1]) {
+      let shift = 0, result = 0, b;
+      do { b = str.charCodeAt(i++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+      const d = (result & 1) ? ~(result >> 1) : (result >> 1);
+      if (which === 0) lat += d; else lng += d;
+    }
+    pts.push([lat / 1e5, lng / 1e5]);
+  }
+  return pts;
+}
+const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? " " + (m % 60) : ""}` : `${m} min`;
+
+ROUTE.forEach(seg => {
+  if (!seg.poly) return;
+  const color = LEG_COLORS[PLACES[seg.b].r];
+  const pts = decodePoly(seg.poly);
+  const line = L.polyline(pts, { color, weight: 2.5, opacity: 0.55 }).addTo(map);
+  const label = `${PLACES[seg.a].n} → ${PLACES[seg.b].n} · ${fmtMin(seg.min)} by car`;
+  line.bindTooltip(label, { sticky: true, direction: "top" });
+  line.on("mouseover", () => line.setStyle({ weight: 4.5, opacity: 0.9 }));
+  line.on("mouseout", () => line.setStyle({ weight: 2.5, opacity: 0.55 }));
+  const tier = seg.min >= 120 ? "t-long" : seg.min >= 20 ? "t-mid" : "t-short";
+  const pill = L.tooltip({ permanent: true, direction: "center", className: `timelabel ${tier}`, opacity: 1 })
+    .setLatLng(pts[Math.floor(pts.length / 2)])
+    .setContent(fmtMin(seg.min))
+    .addTo(map);
+  pill.getElement().style.setProperty("--tc", color);
+});
+function setZoomTier() {
+  const z = map.getZoom();
+  map.getContainer().dataset.z = z >= 11.5 ? "hi" : z >= 8.5 ? "mid" : "lo";
+}
+map.on("zoomend", setZoomTier);
+setZoomTier();
+
+const FitCtl = L.Control.extend({
+  options: { position: "topleft" },
+  onAdd() {
+    const b = L.DomUtil.create("button", "fitbtn leaflet-bar");
+    b.textContent = "Whole trip";
+    b.title = "Zoom back out to the full route";
+    L.DomEvent.on(b, "click", e => { L.DomEvent.stop(e); map.flyToBounds(allBounds, { padding: [36, 36], duration: 0.7 }); });
+    return b;
+  },
+});
+map.addControl(new FitCtl());
+
+function setPin(id, on) {
+  const el = markers[id]?.getElement();
+  if (!el) return;
+  el.firstChild.classList.toggle("on", on);
+  el.classList.toggle("lf-on", on);
+  if (on) markers[id].openTooltip(); else markers[id].closeTooltip();
+}
+function showPins(ids) {
+  ids.forEach(id => setPin(id, true));
+  const pts = ids.map(id => markers[id].getLatLng());
+  const view = map.getBounds().pad(-0.04);
+  if (pts.every(pt => view.contains(pt))) return;   // already visible: no camera motion
+  if (pts.length === 1) {
+    map.panInside(pts[0], { padding: [70, 70] });
+  } else {
+    map.flyToBounds(L.latLngBounds(pts), { padding: [60, 60], duration: 0.55, maxZoom: 12 });
+  }
+}
+function hidePins(ids) { ids.forEach(id => setPin(id, false)); }
+
+function litChips(id, on) {
+  document.querySelectorAll(`.chip[data-p="${id}"]`).forEach(ch => {
+    ch.classList.toggle("lit", on);
+    ch.closest("tr")?.classList.toggle("lit", on);
+  });
+}
+
+/* ---------- table ---------- */
+const tbody = document.querySelector("#sched tbody");
+const SLOTS = [["m", "Morning"], ["a", "Afternoon"], ["e", "Evening"]];
+
+function slotHTML(items, legColor) {
+  if (!items.length) return '<span class="none">·</span>';
+  return items.map(it => {
+    if (it.p) {
+      const pc = LEG_COLORS[PLACES[it.p].r];
+      return `<span class="chip" data-p="${it.p}" style="--pc:${pc}" title="Open in Google Maps">${it.t}</span>`;
+    }
+    if (it.plus) return `<span class="plus">${it.t.trim()}</span>`;
+    return `<span class="${it.q ? "quiet" : ""}">${it.t}</span>`;
+  }).join("");
+}
+
+let lastLeg = -1;
+DAYS.forEach(day => {
+  const leg = LEGS[day.leg];
+  const color = LEG_COLORS[leg.c];
+  if (day.leg !== lastLeg) {
+    lastLeg = day.leg;
+    const tr = document.createElement("tr");
+    tr.className = "leg";
+    tr.style.setProperty("--c", color);
+    tr.innerHTML = `<td colspan="4"><div class="leg-line">
+        <span class="leg-name">${leg.name}</span>
+        <span class="leg-dates">${leg.dates}</span>
+        <span class="leg-hotel">sleeping at <span class="chip" data-p="${leg.hotel}" style="--pc:${color}" title="Open in Google Maps">${leg.hotelLabel}</span></span>
+      </div></td>`;
+    tbody.appendChild(tr);
+  }
+  const tr = document.createElement("tr");
+  tr.className = "day";
+  tr.style.setProperty("--c", color);
+  const dayPlaces = [...new Set(SLOTS.flatMap(([k]) => day[k].filter(i => i.p).map(i => i.p)))];
+  tr.innerHTML =
+    `<td class="when" data-places="${dayPlaces.join(",")}">
+       <div class="dow">${day.dow}</div><div class="dnum">${day.d}</div>
+     </td>` +
+    SLOTS.map(([k, label]) => `<td data-slot="${label}">${slotHTML(day[k], color)}</td>`).join("");
+  tbody.appendChild(tr);
+});
+
+/* route strip in the header */
+document.getElementById("route").innerHTML = LEGS.map(l =>
+  `<span style="--c:${LEG_COLORS[l.c]}"><i></i><b>${l.name}</b>&nbsp;${l.dates}</span>`
+).join("");
+
+/* hover wiring */
+document.querySelectorAll(".chip").forEach(ch => {
+  const id = ch.dataset.p;
+  ch.addEventListener("mouseenter", () => showPins([id]));
+  ch.addEventListener("mouseleave", () => hidePins([id]));
+  ch.addEventListener("click", () => {
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PLACES[id].q)}`, "_blank");
+  });
+});
+document.querySelectorAll("td.when").forEach(td => {
+  const ids = td.dataset.places ? td.dataset.places.split(",") : [];
+  if (!ids.length) return;
+  td.addEventListener("mouseenter", () => showPins(ids));
+  td.addEventListener("mouseleave", () => hidePins(ids));
+});
+</script>
+</body>
+</html>
